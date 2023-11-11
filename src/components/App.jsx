@@ -6,6 +6,7 @@ import { ContactForm } from './ContactForm/ContactForm';
 import { nanoid } from 'nanoid';
 import { Container } from './App.styled';
 
+const localStorageKey = 'contacts-book';
 
 export class App extends Component {
   state = {
@@ -13,37 +14,62 @@ export class App extends Component {
     filter: '',
   };
 
-  updateFilter = (contactName) => {
+  componentDidMount() {
+    const savedContacts = window.localStorage.getItem(localStorageKey);
+    if (savedContacts !== null) {
+      const contacts = JSON.parse(savedContacts);
+      this.setState({
+        contacts: contacts,
+      });
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.contacts !== this.state.contacts) {
+      window.localStorage.setItem(
+        localStorageKey,
+        JSON.stringify(this.state.contacts)
+      );
+    }
+  }
+
+  updateFilter = contactName => {
     this.setState({
       filter: contactName,
     });
   };
 
-  deleteContact = (contactId) => {
+  deleteContact = contactId => {
     this.setState(prevState => {
       return {
-        contacts: prevState.contacts.filter(contact => contact.id !== contactId)
-      }
-    })
+        contacts: prevState.contacts.filter(
+          contact => contact.id !== contactId
+        ),
+      };
+    });
   };
 
-  addContact = (newContact) => {
+  addContact = newContact => {
     const { contacts } = this.state;
-    const sameContact = contacts.some(contact => contact.name === newContact.name);
+    const sameContact = contacts.some(
+      contact => contact.name === newContact.name
+    );
     if (sameContact) {
       alert(`${newContact.name} is alredy contact`);
-    }else{
-    this.setState(prevState => {
-      return {
-        contacts: [...prevState.contacts, {
-          id: nanoid(),
-          ...newContact,
-        }]
-      }
-    })
-  }
+    } else {
+      this.setState(prevState => {
+        return {
+          contacts: [
+            ...prevState.contacts,
+            {
+              id: nanoid(),
+              ...newContact,
+            },
+          ],
+        };
+      });
+    }
   };
-
 
   render() {
     const { contacts, filter } = this.state;
@@ -51,7 +77,7 @@ export class App extends Component {
       const hasContact = contact.name
         .toLowerCase()
         .includes(filter.toLowerCase());
-      
+
       return hasContact;
     });
     return (
@@ -61,7 +87,10 @@ export class App extends Component {
         <h2>Contacts</h2>
         <Filter filter={filter} onUpdateFilter={this.updateFilter} />
         {contacts.length > 0 && (
-          <ContactList items={visibleContacts} deleteContact={this.deleteContact} />
+          <ContactList
+            items={visibleContacts}
+            deleteContact={this.deleteContact}
+          />
         )}
         <GlobalStyle />
       </Container>
